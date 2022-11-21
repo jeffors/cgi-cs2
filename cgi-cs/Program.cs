@@ -276,37 +276,41 @@ namespace cgi_cs
                 {
                     var qs = GetInputNumber(PostData);
 
-                    if (!string.IsNullOrWhiteSpace(qs["hidden_number"]) && int.TryParse(Decrypt(qs["hidden_number"]), out var postHiddenNumber))
+                    if (int.TryParse(Decrypt(qs["hidden_number"]), out var postHiddenNumber))
                     {
                         hiddenNumber = postHiddenNumber;
                     }
+                    else
+                    {
+                        blockedForm = true;
+                        ErrorDecrypt = true;
+                    }
 
-                    if (!string.IsNullOrWhiteSpace(qs["attempts"]) && int.TryParse(Decrypt(qs["attempts"]), out var postAttempts))
+                    if (int.TryParse(Decrypt(qs["attempts"]), out var postAttempts))
                     {
                         attempts = postAttempts;
                     }
+                    else
+                    {
+                        blockedForm = true;
+                        ErrorDecrypt = true;
+                    }
+
+                    outputText = GetOutput(inputNumber, hiddenNumber);
                 }
                 catch
                 {
                     blockedForm = true;
                     ErrorDecrypt = true;
                 }
-            }
-
-            if (hiddenNumber == null)
+            } 
+            else 
             {
                 hiddenNumber = rnd.Next(100, 140);
-            }
-
-            if (attempts == null)
-            {
                 attempts = (int)Math.Ceiling(Math.Log2(160 - 100 + 1));
             }
-            else
-            {
-                
-                outputText = GetOutput(inputNumber, hiddenNumber);
-            }
+
+           
 
             string encrypted = "";
             try
