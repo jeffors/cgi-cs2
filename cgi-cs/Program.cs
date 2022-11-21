@@ -16,6 +16,8 @@ namespace cgi_cs
         private static int? hiddenNumber = null;
         private static int inputNumber = 0;
         private static bool blockedForm = false;
+        private static bool havePost = false;
+        private static bool ErrorDecrypt = false;
 
         [DllImport("kernel32", SetLastError = true)]
         static extern int SetConsoleMode(int hConsoleHandle, int dwMode);
@@ -100,8 +102,8 @@ namespace cgi_cs
       <form action=""index.cgi"" id=""input-group"" method=""post"">
         <div class=""input-group"">
           <input type=""number"" id=""input-number"" class=""form-control"" placeholder=""Число"" name=""input_number"" disabled>
-          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""hidden_number"" value=""{hiddenNumber}"">
-          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""attempts"" value=""{attempts}"">
+          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""hidden_number"" value=""{Encrypt(hiddenNumber.ToString())}"">
+          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""attempts"" value=""{Encrypt(attempts.ToString())}"">
           <button class=""btn btn-primary"" type=""submit"" id=""check"" disabled>Проверить</button>
           <a class=""btn btn-outline-secondary"" href=""/cgi/"">Заново</a>        
         </div>
@@ -120,8 +122,8 @@ namespace cgi_cs
       <form action=""index.cgi"" id=""input-group"" method=""post"">
         <div class=""input-group"">
           <input type=""number"" id=""input-number"" class=""form-control"" placeholder=""Число"" name=""input_number"" autofocus>
-          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""hidden_number"" value=""{hiddenNumber}"">
-          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""attempts"" value=""{attempts}"">
+          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""hidden_number"" value=""{Encrypt(hiddenNumber.ToString())}"">
+          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""attempts"" value=""{Encrypt(attempts.ToString())}"">
           <button class=""btn btn-primary"" type=""submit"" id=""check"">Проверить</button>
           <a class=""btn btn-outline-secondary"" href=""/cgi/"">Заново</a>        
         </div>
@@ -132,11 +134,13 @@ namespace cgi_cs
             }
         }
 
-        private static string Encrypt()
+        
+
+        private static string Encrypt(string textToEncrypt)
         {
             try
             {
-                string textToEncrypt = "WaterWorld";
+                
                 string toReturn = "";
                 string publickey = "12345678";
                 string secretkey = "87654321";
@@ -168,11 +172,11 @@ namespace cgi_cs
             }
         }
 
-        private static string Decrypt()
+        private static string Decrypt(string textToDecrypt)
         {
             try
             {
-                string textToDecrypt = "6+PXxVWlBqcUnIdqsMyUHA==";
+                
                 
                 string toReturn = "";
                 string publickey = "12345678";
@@ -252,22 +256,42 @@ namespace cgi_cs
                     sb.Append(s + " - " + qs[s] + "<br />");
                 }
 
+                
+
                 if (int.TryParse(qs["input_number"], out var postNumber))
                 {
                     inputNumber = postNumber;
                 }
 
-                if (int.TryParse(qs["hidden_number"], out var postHiddenNumber))
-                {
-                    hiddenNumber = postHiddenNumber;
-                }
+                havePost = true;
+            }
+            catch 
+            {
+                havePost = false;
+            }
 
-                if (int.TryParse(qs["attempts"], out var postAttempts))
+            if (havePost)
+            {
+                try
                 {
-                    attempts = postAttempts;
+                    var qs = GetInputNumber(PostData);
+
+                    if (!string.IsNullOrWhiteSpace(qs["hidden_number"]) && int.TryParse(Decrypt(qs["hidden_number"]), out var postHiddenNumber))
+                    {
+                        hiddenNumber = postHiddenNumber;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(qs["attempts"]) && int.TryParse(Decrypt(qs["attempts"]), out var postAttempts))
+                    {
+                        attempts = postAttempts;
+                    }
+                }
+                catch
+                {
+                    blockedForm = true;
+                    ErrorDecrypt = true;
                 }
             }
-            catch { }
 
             if (hiddenNumber == null)
             {
@@ -287,7 +311,7 @@ namespace cgi_cs
             string encrypted = "";
             try
             {
-                encrypted = Encrypt();
+                //encrypted = Encrypt();
                 
             }
             catch (Exception ex)
@@ -298,7 +322,7 @@ namespace cgi_cs
             string decrypted = "";
             try
             {
-                decrypted = Decrypt();
+                //decrypted = Decrypt();
             }
             catch (Exception ex)
             {
@@ -313,17 +337,23 @@ namespace cgi_cs
 
 
 
-            
-            
+
+
+
+
+
+
+            if (ErrorDecrypt)
+            {
+                outputText = "<p>• Кажется, вас зовут Калитаев Александр Николаевич. А студенты вас зовут просто занудой</p>";
+            }
 
             
-
-            
-
 
             Console.Write($@"<h3>Ваши действия:</h3>
       <div class=""row"" id=""custom-actions"">
         {sb.ToString()} 
+        
         {inputNumber} {hiddenNumber} {attempts}
         {outputText}
 {encrypted}
