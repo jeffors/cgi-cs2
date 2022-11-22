@@ -12,9 +12,11 @@ namespace cgi_cs
     {
         const int min = 100;
         const int max = 140;
+
         private static int? attempts = null;
         private static int? hiddenNumber = null;
         private static int inputNumber = 0;
+
         private static bool blockedForm = false;
         private static bool havePost = false;
         private static bool ErrorDecrypt = false;
@@ -27,15 +29,26 @@ namespace cgi_cs
 
         private static void GatherPostThread()
         {
-            if (PostLength > 2048) PostLength = 2048;  // Max length for POST data for security.
+            if (PostLength > 2048) PostLength = 2048;  
             for (; PostLength > 0; PostLength--)
                 PostData += Convert.ToChar(Console.Read()).ToString();
         }
 
-        private static NameValueCollection GetInputNumber(string PostData)
+        private static NameValueCollection? GetPostCollection(string PostData)
         {
-            NameValueCollection qscoll = HttpUtility.ParseQueryString(PostData);
-            return qscoll;
+            try
+            {
+                NameValueCollection qscoll = HttpUtility.ParseQueryString(PostData);
+                havePost = true;
+                return qscoll;
+            }
+            catch 
+            {
+                havePost = false;
+                return null;
+            }
+
+            
         }
 
         private static string GetOutput(int inputNumber, int? hiddenNumber)
@@ -247,55 +260,23 @@ namespace cgi_cs
 
             StringBuilder sb = new StringBuilder("<br/>");
 
-            try
+            var qs1 = GetPostCollection(PostData);
+
+            if (havePost && int.TryParse(qs1["input_number"], out var postNumber))
             {
-                var qs = GetInputNumber(PostData);
-
-                foreach (string s in qs.AllKeys)
-                {
-                    sb.Append(s + " - " + qs[s] + "<br />");
-                }
-
-                
-
-                if (int.TryParse(qs["input_number"], out var postNumber))
-                {
-                    inputNumber = postNumber;
-                }
-
-                havePost = true;
+                inputNumber = postNumber;
             }
-            catch 
-            {
-                havePost = false;
-            }
+
+            
 
             if (havePost)
             {
                 try
                 {
-                    var qs = GetInputNumber(PostData);
-
-                    if (int.TryParse(Decrypt(qs["hidden_number"]), out var postHiddenNumber))
-                    {
-                        hiddenNumber = postHiddenNumber;
-                    }
-                    else
-                    {
-                        blockedForm = true;
-                        ErrorDecrypt = true;
-                    }
-
-                    if (int.TryParse(Decrypt(qs["attempts"]), out var postAttempts))
-                    {
-                        attempts = postAttempts;
-                    }
-                    else
-                    {
-                        blockedForm = true;
-                        ErrorDecrypt = true;
-                    }
-
+                                        
+                    hiddenNumber = int.Parse(Decrypt(qs1["hidden_number"]));
+                    attempts = int.Parse(Decrypt(qs1["attempts"]));
+                                        
                     outputText = GetOutput(inputNumber, hiddenNumber);
                 }
                 catch
@@ -306,32 +287,13 @@ namespace cgi_cs
             } 
             else 
             {
-                hiddenNumber = rnd.Next(100, 140);
-                attempts = (int)Math.Ceiling(Math.Log2(160 - 100 + 1));
+                hiddenNumber = rnd.Next(min, max);
+                attempts = (int)Math.Ceiling(Math.Log2(max - min + 1));
             }
 
            
 
-            string encrypted = "";
-            try
-            {
-                //encrypted = Encrypt();
-                
-            }
-            catch (Exception ex)
-            {
-                encrypted = ex.Message + "\n";
-            }
-
-            string decrypted = "";
-            try
-            {
-                //decrypted = Decrypt();
-            }
-            catch (Exception ex)
-            {
-                decrypted = ex.Message + "\n";
-            }
+            
 
             SetConsoleMode(3, 0);
 
@@ -349,19 +311,18 @@ namespace cgi_cs
 
             if (ErrorDecrypt)
             {
-                outputText = "<p>• Кажется, вас зовут Калитаев Александр Николаевич. А студенты вас зовут просто занудой</p>";
+                outputText = "<p>• Произошла попытка взлома. Ввод чисел заблокирован до полного сброса.</p>";
             }
 
             
 
             Console.Write($@"<h3>Ваши действия:</h3>
       <div class=""row"" id=""custom-actions"">
-        {sb.ToString()} 
+        
         
         {inputNumber} {hiddenNumber} {attempts}
         {outputText}
-{encrypted}
-{decrypted}
+
       </div>
 
     </div>
