@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Specialized;
-using System.Numerics;
+﻿using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -29,7 +27,7 @@ namespace cgi_cs
 
         private static void GatherPostThread()
         {
-            if (PostLength > 2048) PostLength = 2048;  
+            if (PostLength > 2048) PostLength = 2048;
             for (; PostLength > 0; PostLength--)
                 PostData += Convert.ToChar(Console.Read()).ToString();
         }
@@ -42,13 +40,13 @@ namespace cgi_cs
                 havePost = true;
                 return qscoll;
             }
-            catch 
+            catch
             {
                 havePost = false;
                 return null;
             }
 
-            
+
         }
 
         private static string GetOutput(int inputNumber, int? hiddenNumber)
@@ -147,13 +145,13 @@ namespace cgi_cs
             }
         }
 
-        
+
 
         private static string Encrypt(string textToEncrypt)
         {
             try
             {
-                
+
                 string toReturn = "";
                 string publickey = "12345678";
                 string secretkey = "87654321";
@@ -189,8 +187,8 @@ namespace cgi_cs
         {
             try
             {
-                
-                
+
+
                 string toReturn = "";
                 string publickey = "12345678";
                 string secretkey = "87654321";
@@ -224,17 +222,17 @@ namespace cgi_cs
                 throw new Exception(ex.Message, ex.InnerException);
             }
         }
-            
+
 
         [STAThread]
         static void Main(string[] args)
         {
-            
+
 
 
             Random rnd = new Random();
 
-            
+
             string outputText = "";
 
 
@@ -267,16 +265,16 @@ namespace cgi_cs
                 inputNumber = postNumber;
             }
 
-            
+
 
             if (havePost)
             {
                 try
                 {
-                                        
+
                     hiddenNumber = int.Parse(Decrypt(qs1["hidden_number"]));
                     attempts = int.Parse(Decrypt(qs1["attempts"]));
-                                        
+
                     outputText = GetOutput(inputNumber, hiddenNumber);
                 }
                 catch
@@ -284,16 +282,16 @@ namespace cgi_cs
                     blockedForm = true;
                     ErrorDecrypt = true;
                 }
-            } 
-            else 
+            }
+            else
             {
                 hiddenNumber = rnd.Next(min, max);
                 attempts = (int)Math.Ceiling(Math.Log2(max - min + 1));
             }
 
-           
 
-            
+
+
 
             SetConsoleMode(3, 0);
 
@@ -314,7 +312,7 @@ namespace cgi_cs
                 outputText = "<p>• Произошла попытка взлома. Ввод чисел заблокирован до полного сброса.</p>";
             }
 
-            
+
 
             Console.Write($@"<h3>Ваши действия:</h3>
       <div class=""row"" id=""custom-actions"">
