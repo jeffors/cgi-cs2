@@ -8,8 +8,8 @@ namespace cgi_cs
 {
     internal class Program
     {
-        const int min = 100;
-        const int max = 140;
+        private const int min = 100;
+        private const int max = 140;
 
         private static int? attempts = null;
         private static int? hiddenNumber = null;
@@ -19,17 +19,26 @@ namespace cgi_cs
         private static bool havePost = false;
         private static bool ErrorDecrypt = false;
 
-        [DllImport("kernel32", SetLastError = true)]
-        static extern int SetConsoleMode(int hConsoleHandle, int dwMode);
+        private static string publickey = "90576154";
+        private static string secretkey = "57900907";
 
-        private static string PostData;
+        [DllImport("kernel32", SetLastError = true)]
+        private static extern int SetConsoleMode(int hConsoleHandle, int dwMode);
+
+        private static string? PostData;
         private static int PostLength;
 
         private static void GatherPostThread()
         {
-            if (PostLength > 2048) PostLength = 2048;
+            if (PostLength > 2048)
+            {
+                PostLength = 2048;
+            }
+
             for (; PostLength > 0; PostLength--)
+            {
                 PostData += Convert.ToChar(Console.Read()).ToString();
+            }
         }
 
         private static NameValueCollection? GetPostCollection(string PostData)
@@ -62,20 +71,20 @@ namespace cgi_cs
                 else if (attempts == 0)
                 {
                     blockedForm = true;
-                    return $"<p>• Попытки закончились и вы проиграли. Загаданное число: {hiddenNumber}</p>";
+                    return $"<p>• Попытки закончились и вы проиграли. Загаданное число: {hiddenNumber}.</p>";
                 }
                 else if (inputNumber < hiddenNumber)
                 {
-                    return $"<p>• Загаданное число больше <mark>{inputNumber}</mark>. Попыток осталось: {attempts}</p>";
+                    return $"<p>• Загаданное число больше <mark>{inputNumber}</mark>.</p>";
                 }
                 else if (inputNumber > hiddenNumber)
                 {
-                    return $"<p>• Загаданное число меньше <mark>{inputNumber}</mark>. Попыток осталось: {attempts}</p>";
+                    return $"<p>• Загаданное число меньше <mark>{inputNumber}</mark>.</p>";
                 }
             }
             else
             {
-                return $"<p>• Введённое число <mark>{inputNumber}</mark> не входит в диапазон. Попыток осталось: {attempts}</p>";
+                return $"<p>• Введённое число <mark>{inputNumber}</mark> не входит в диапазон.</p>";
             }
 
             return "";
@@ -103,46 +112,54 @@ namespace cgi_cs
 
         private static void PrintHeader()
         {
+            string disabledAttribute = "";
             if (blockedForm)
             {
-                Console.Write(@$"<body>
+                disabledAttribute = "disabled";
+            }
+
+            Console.Write(@$"<body>
   <div class=""main"">
     <div class=""container"">
       <h1 class=""mt-3"" id=""title"">Игра ""Угадай число""</h1>
-      <p class=""lead"" id=""range"">Компьютер загадал число от [{min};{max}]</p><p id=""tries"">Задача: отгадать число за {attempts} попыток</p>
+      <p class=""lead"" id=""range"">Компьютер загадал число от [{min};{max}]</p><p id=""tries"">Осталось попыток: {attempts}</p>
       <form action=""index.cgi"" id=""input-group"" method=""post"">
         <div class=""input-group"">
-          <input type=""number"" id=""input-number"" class=""form-control"" placeholder=""Число"" name=""input_number"" disabled>
+          <input type=""number"" id=""input-number"" class=""form-control"" placeholder=""Число"" name=""input_number"" {disabledAttribute} autofocus>
           <input type=""hidden"" id=""input-number"" class=""form-control"" name=""hidden_number"" value=""{Encrypt(hiddenNumber.ToString())}"">
           <input type=""hidden"" id=""input-number"" class=""form-control"" name=""attempts"" value=""{Encrypt(attempts.ToString())}"">
-          <button class=""btn btn-primary"" type=""submit"" id=""check"" disabled>Проверить</button>
-          <a class=""btn btn-outline-secondary"" href=""/cgi/"">Заново</a>        
+          <button class=""btn btn-primary"" type=""submit"" id=""check"" {disabledAttribute}>Проверить</button>
+          <a class=""btn btn-outline-secondary"" href=""{System.Environment.GetEnvironmentVariable("SCRIPT_NAME")}"">Заново</a>        
         </div>
       </form>
       <hr/>
 
       ");
-            }
-            else
-            {
-                Console.Write(@$"<body>
-  <div class=""main"">
-    <div class=""container"">
-      <h1 class=""mt-3"" id=""title"">Игра ""Угадай число""</h1>
-      <p class=""lead"" id=""range"">Компьютер загадал число от [{min};{max}]</p><p id=""tries"">Задача: отгадать число за {attempts} попыток</p>
-      <form action=""index.cgi"" id=""input-group"" method=""post"">
-        <div class=""input-group"">
-          <input type=""number"" id=""input-number"" class=""form-control"" placeholder=""Число"" name=""input_number"" autofocus>
-          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""hidden_number"" value=""{Encrypt(hiddenNumber.ToString())}"">
-          <input type=""hidden"" id=""input-number"" class=""form-control"" name=""attempts"" value=""{Encrypt(attempts.ToString())}"">
-          <button class=""btn btn-primary"" type=""submit"" id=""check"">Проверить</button>
-          <a class=""btn btn-outline-secondary"" href=""/cgi/"">Заново</a>        
-        </div>
-      </form>
-      <hr/>
 
-      ");
-            }
+            
+            
+        }
+
+        public static void PrintStatus(string outputText)
+        {
+            Console.Write($@"<h3>Текущий статус:</h3>
+      <div class=""row"" id=""custom-actions"">
+               
+        {outputText}
+
+      </div>
+
+    </div>
+
+
+  </div>
+
+
+  <script src=""js/bootstrap.min.js""></script>
+  <!-- <script src=""js/game.js""></script> -->
+</body>
+
+</html>");
         }
 
 
@@ -153,8 +170,7 @@ namespace cgi_cs
             {
 
                 string toReturn = "";
-                string publickey = "12345678";
-                string secretkey = "87654321";
+                
 
                 byte[] secretKeyByte = { };
                 byte[] publickeyByte = { };
@@ -162,11 +178,11 @@ namespace cgi_cs
                 secretKeyByte = System.Text.Encoding.UTF8.GetBytes(secretkey);
                 publickeyByte = System.Text.Encoding.UTF8.GetBytes(publickey);
 
-                MemoryStream ms = null;
-                CryptoStream cs = null;
+                MemoryStream? ms = null;
+                CryptoStream? cs = null;
 
                 byte[] inputbyteArray = System.Text.Encoding.UTF8.GetBytes(textToEncrypt);
-                using (DESCryptoServiceProvider des = new DESCryptoServiceProvider())
+                using (DESCryptoServiceProvider des = new())
                 {
                     ms = new MemoryStream();
                     cs = new CryptoStream(ms, des.CreateEncryptor(publickeyByte, secretKeyByte), CryptoStreamMode.Write);
@@ -187,11 +203,8 @@ namespace cgi_cs
         {
             try
             {
-
-
                 string toReturn = "";
-                string publickey = "12345678";
-                string secretkey = "87654321";
+                
 
                 byte[] secretKeyByte = { };
                 byte[] publicKeyByte = { };
@@ -199,13 +212,13 @@ namespace cgi_cs
                 secretKeyByte = System.Text.Encoding.UTF8.GetBytes(secretkey);
                 publicKeyByte = System.Text.Encoding.UTF8.GetBytes(publickey);
 
-                MemoryStream ms = null;
-                CryptoStream cs = null;
+                MemoryStream? ms = null;
+                CryptoStream? cs = null;
 
                 byte[] inputbyteArray = new byte[textToDecrypt.Replace(" ", "+").Length];
                 inputbyteArray = Convert.FromBase64String(textToDecrypt.Replace(" ", "+"));
 
-                using (DESCryptoServiceProvider des = new DESCryptoServiceProvider())
+                using (DESCryptoServiceProvider des = new())
                 {
                     ms = new MemoryStream();
                     cs = new CryptoStream(ms, des.CreateDecryptor(publicKeyByte, secretKeyByte), CryptoStreamMode.Write);
@@ -225,30 +238,29 @@ namespace cgi_cs
 
 
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
+            Random rnd = new();
 
+            string outputText = "<p>• Началась новая игра.</p>";
 
-
-            Random rnd = new Random();
-
-
-            string outputText = "";
-
-
-
-            ThreadStart ThreadDelegate = new ThreadStart(GatherPostThread);
-            Thread PostThread = new Thread(ThreadDelegate);
+            ThreadStart ThreadDelegate = new(GatherPostThread);
+            Thread PostThread = new(ThreadDelegate);
             PostLength = Convert.ToInt32(System.Environment.GetEnvironmentVariable("CONTENT_LENGTH"));
             int LengthCompare = PostLength;
 
-            if (PostLength > 0) PostThread.Start();
+            if (PostLength > 0)
+            {
+                PostThread.Start();
+            }
 
             while (PostLength > 0)
             {
                 Thread.Sleep(100);
                 if (PostLength < LengthCompare)
+                {
                     LengthCompare = PostLength;
+                }
                 else
                 {
                     PostData += "Error with POST data or connection problem.";
@@ -256,15 +268,12 @@ namespace cgi_cs
                 }
             }
 
-            StringBuilder sb = new StringBuilder("<br/>");
+            NameValueCollection? qs = GetPostCollection(PostData);
 
-            var qs1 = GetPostCollection(PostData);
-
-            if (havePost && int.TryParse(qs1["input_number"], out var postNumber))
+            if (havePost && int.TryParse(qs["input_number"], out int postNumber))
             {
                 inputNumber = postNumber;
             }
-
 
 
             if (havePost)
@@ -272,8 +281,8 @@ namespace cgi_cs
                 try
                 {
 
-                    hiddenNumber = int.Parse(Decrypt(qs1["hidden_number"]));
-                    attempts = int.Parse(Decrypt(qs1["attempts"]));
+                    hiddenNumber = int.Parse(Decrypt(qs["hidden_number"]));
+                    attempts = int.Parse(Decrypt(qs["attempts"]));
 
                     outputText = GetOutput(inputNumber, hiddenNumber);
                 }
@@ -289,55 +298,21 @@ namespace cgi_cs
                 attempts = (int)Math.Ceiling(Math.Log2(max - min + 1));
             }
 
-
-
-
-
-            SetConsoleMode(3, 0);
+            _ = SetConsoleMode(3, 0);
 
             PrintHead();
 
             PrintHeader();
-
-
-
-
-
-
-
-
-
+                        
             if (ErrorDecrypt)
             {
                 outputText = "<p>• Произошла попытка взлома. Ввод чисел заблокирован до полного сброса.</p>";
             }
 
-
-
-            Console.Write($@"<h3>Ваши действия:</h3>
-      <div class=""row"" id=""custom-actions"">
-        
-        
-        {inputNumber} {hiddenNumber} {attempts}
-        {outputText}
-
-      </div>
-
-    </div>
-
-
-  </div>
-
-
-  <script src=""js/bootstrap.min.js""></script>
-  <!-- <script src=""js/game.js""></script> -->
-</body>
-
-</html>");
-
+            PrintStatus(outputText); 
 
             Environment.Exit(0);
-        }  // End of Main().
+        }  
     }
 
 
